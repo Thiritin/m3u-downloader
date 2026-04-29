@@ -1,16 +1,16 @@
-//go:build !darwin
+//go:build !darwin && !linux
 
 package service
 
 import "errors"
 
-// Install is unsupported on non-macOS platforms. Use systemd (Linux) or
-// Task Scheduler (Windows) to keep `m3u-dl worker` running at startup.
+// Install is unsupported on this platform. Only macOS (launchd) and
+// Linux (systemd-user) are supported.
 func Install() error {
-	return errors.New("install-service is currently macOS only; on Linux configure a systemd user unit, on Windows use Task Scheduler")
+	return errors.New("install-service is only supported on macOS and Linux")
 }
 
-// Uninstall is unsupported on non-macOS platforms.
+// Uninstall is unsupported on this platform.
 func Uninstall() error {
-	return errors.New("uninstall-service is currently macOS only")
+	return errors.New("uninstall-service is only supported on macOS and Linux")
 }
