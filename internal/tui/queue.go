@@ -78,6 +78,9 @@ func (m queueModel) Update(msg tea.Msg) (queueModel, tea.Cmd) {
 				_ = m.store.RetryFailedJob(context.Background(), it.row.ID)
 				return m, refreshQueueCmd(m.store)
 			}
+		case "R":
+			_, _ = m.store.RetryAllFailedJobs(context.Background())
+			return m, refreshQueueCmd(m.store)
 		case "d", "x":
 			// Cancel an active job (worker will react within ~1s) or remove
 			// any other row from the list.
@@ -99,6 +102,6 @@ func (m queueModel) Update(msg tea.Msg) (queueModel, tea.Cmd) {
 
 func (m queueModel) View(w, h int) string {
 	body := pane.Width(w-2).Height(h-3).Render(m.jobs.View())
-	footer := statusBar.Render("r retry failed   d cancel/remove   b browse   ctrl+c quit")
+	footer := statusBar.Render("r retry failed   R retry all failed   d cancel/remove   b browse   ctrl+c quit")
 	return lipgloss.JoinVertical(lipgloss.Left, body, footer)
 }

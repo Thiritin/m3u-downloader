@@ -197,6 +197,18 @@ func (s *Store) RetryFailedJob(ctx context.Context, id int64) error {
 	return err
 }
 
+// RetryAllFailedJobs flips every failed job back to pending and resets its
+// attempt counter. Returns the number of rows updated.
+func (s *Store) RetryAllFailedJobs(ctx context.Context) (int, error) {
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE jobs SET status='pending', attempts=0, last_error=NULL, started_at=NULL, completed_at=NULL WHERE status='failed'`)
+	if err != nil {
+		return 0, err
+	}
+	n, err := res.RowsAffected()
+	return int(n), err
+}
+
 func (s *Store) ListJobs(ctx context.Context, statuses ...string) ([]JobRow, error) {
 	if len(statuses) == 0 {
 		statuses = []string{"pending", "active", "completed", "failed", "cancelled"}
