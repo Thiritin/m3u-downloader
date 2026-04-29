@@ -14,7 +14,7 @@ series into a Plex-compatible library.
 - Runs on macOS, Linux, and Windows. Single static binary, no CGO.
 
 One binary, several subcommands: `m3u-dl tui`, `m3u-dl worker`,
-`m3u-dl sync`, `m3u-dl config`, `m3u-dl install-service` (macOS).
+`m3u-dl sync`, `m3u-dl config`, `m3u-dl install-service` (macOS + Linux).
 
 ## Requirements
 
@@ -26,10 +26,52 @@ One binary, several subcommands: `m3u-dl tui`, `m3u-dl worker`,
 
 ## Install
 
-Grab a binary from [Releases](https://github.com/Thiritin/m3u-downloader/releases),
-or build:
+### macOS — Homebrew tap
 
-```bash
+```sh
+brew install Thiritin/tap/m3u-dl
+m3u-dl install-service     # registers launchd agent
+```
+
+### Linux — Debian/Ubuntu (.deb)
+
+Download the latest `m3u-dl_<version>_<arch>.deb` from
+[Releases](https://github.com/Thiritin/m3u-downloader/releases), then:
+
+```sh
+sudo apt install ./m3u-dl_<version>_<arch>.deb
+systemctl --user enable --now m3u-dl
+loginctl enable-linger $USER     # optional: keep worker running when logged out
+```
+
+### Linux — Fedora/RHEL/openSUSE (.rpm)
+
+```sh
+sudo dnf install ./m3u-dl-<version>-1.<arch>.rpm
+systemctl --user enable --now m3u-dl
+```
+
+### Verify signatures (optional but recommended)
+
+The release ships a detached signature `SHA256SUMS.sig` and signed `.deb`/`.rpm`
+packages, signed with the Ed25519 subkey of GPG key
+`38C2 351F 2FAF 1916 9C04 9ECD 1298 7C55 60FC 289B`.
+
+```sh
+# Import the public key (from this repo or keys.openpgp.org)
+gpg --import packaging/m3u-dl-release.pub.asc
+
+# Verify the checksums file
+gpg --verify SHA256SUMS.sig SHA256SUMS
+sha256sum -c SHA256SUMS
+
+# For .rpm: rpm --checksig m3u-dl-*.rpm
+# For .deb: debsig-verify (requires debsig policy setup)
+```
+
+### Build from source
+
+```sh
 git clone https://github.com/Thiritin/m3u-downloader
 cd m3u-downloader
 make build
@@ -70,12 +112,11 @@ unmounted-volume safety check. Verify with `./m3u-dl config`.
 ./m3u-dl tui               # browse + queue
 ./m3u-dl worker            # process the queue (logs to stderr)
 ./m3u-dl sync              # force a full catalog refresh
-./m3u-dl install-service   # launchd agent (macOS only)
-./m3u-dl uninstall-service # remove launchd agent (macOS only)
+./m3u-dl install-service   # macOS: launchd agent / Linux: systemd-user unit
+./m3u-dl uninstall-service # remove the platform-appropriate service
 ```
 
-On Linux, run the worker via a systemd user unit. On Windows, register a
-Task Scheduler task that runs `m3u-dl.exe worker` at logon.
+On Windows, register a Task Scheduler task that runs `m3u-dl.exe worker` at logon.
 
 ### TUI keys
 
