@@ -1,0 +1,30 @@
+# m3u-dl configuration. Copy to ~/.config/m3u-dl/config.toml and fill in the
+# values for your provider, then edit the output paths to match your Plex
+# library layout.
+
+[provider]
+# Your Xtream Codes provider. base_url is the host (no /player_api.php),
+# username and password are the credentials your provider issued.
+base_url   = "http://your-provider.example.com"
+username   = "YOUR_USERNAME"
+password   = "YOUR_PASSWORD"
+# Some providers reject default User-Agents. Most off-the-shelf players
+# work; "LimePlayer" is a common one. Change if your provider needs
+# something specific.
+user_agent = "LimePlayer"
+
+[output]
+# Both directories MUST exist before the worker starts (an unmounted-volume
+# safety check). Point them at your two Plex libraries (movies and TV).
+movies_dir = "/Volumes/Media/Movies"
+series_dir = "/Volumes/Media/TV Shows"
+
+[downloader]
+# Remux to MKV via ffmpeg -c copy (no re-encode). Disable to save the raw
+# stream as-is.
+remux           = true
+# Auto-retry transient failures this many times before marking failed.
+max_retries     = 3
+# Seconds to wait before each retry (ascending; uses last value if attempts
+# exceed array length).
+backoff_seconds = [5, 30, 120]

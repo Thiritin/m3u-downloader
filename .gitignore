@@ -1,0 +1,9 @@
+/m3u-dl
+/dist/
+*.test
+*.out
+.DS_Store
+/CLAUDE.md
+
+# Local design notes / brainstorming output
+/docs/superpowers/

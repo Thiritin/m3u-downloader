@@ -1,0 +1,27 @@
+[
+  {
+    "category_id": "1109",
+    "category_name": "TOP IMDB/OSCAR MOVIES",
+    "parent_id": 0
+  },
+  {
+    "category_id": "2172",
+    "category_name": "|EN| BROADWAY/MUSICAL",
+    "parent_id": 0
+  },
+  {
+    "category_id": "633",
+    "category_name": "|EN| 4K MOVIES",
+    "parent_id": 0
+  },
+  {
+    "category_id": "634",
+    "category_name": "|EN| 4K CHILDREN",
+    "parent_id": 0
+  },
+  {
+    "category_id": "631",
+    "category_name": "4K NETFLIX MOVIES",
+    "parent_id": 0
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "category_id": "1314",
+    "category_name": "|NL| NETFLIX",
+    "parent_id": 0
+  },
+  {
+    "category_id": "1036",
+    "category_name": "|NL| VIDEOLAND",
+    "parent_id": 0
+  },
+  {
+    "category_id": "1391",
+    "category_name": "|NL| NPO",
+    "parent_id": 0
+  },
+  {
+    "category_id": "1392",
+    "category_name": "|NL| NL ZIET",
+    "parent_id": 0
+  },
+  {
+    "category_id": "2173",
+    "category_name": "|NL| KINDEREN",
+    "parent_id": 0
+  }
+]
