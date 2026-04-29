@@ -8,11 +8,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/Thiritin/m3u-downloader/internal/catalog"
 	"github.com/Thiritin/m3u-downloader/internal/store"
+	"github.com/Thiritin/m3u-downloader/internal/xtream"
 )
 
 type searchModel struct {
 	store     *store.Store
+	xc        *xtream.Client
 	results   list.Model
 	moviesDir string
 	seriesDir string
@@ -25,13 +28,14 @@ type searchModel struct {
 	allSeries []store.SeriesRow
 }
 
-func newSearchModel(st *store.Store, moviesDir, seriesDir string) searchModel {
+func newSearchModel(st *store.Store, xc *xtream.Client, moviesDir, seriesDir string) searchModel {
 	l := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	l.Title = "Search (press / to filter)"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(true)
 	return searchModel{
 		store:     st,
+		xc:        xc,
 		results:   l,
 		moviesDir: moviesDir,
 		seriesDir: seriesDir,
@@ -121,19 +125,19 @@ func buildSearchItems(vods []store.VODRow, series []store.SeriesRow, statuses ma
 }
 
 func (m searchModel) queueSelected() (searchModel, tea.Cmd) {
-	cfg := EnqueueConfig{MoviesDir: m.moviesDir, SeriesDir: m.seriesDir}
+	cfg := catalog.EnqueueConfig{MoviesDir: m.moviesDir, SeriesDir: m.seriesDir}
 	ctx := context.Background()
 	switch it := m.results.SelectedItem().(type) {
 	case vodItem:
-		err := enqueueVOD(ctx, m.store, cfg, it.row)
+		err := catalog.EnqueueVOD(ctx, m.store, cfg, it.row)
 		m.statusMsg = friendlyEnqueueMsg("queued movie", err)
 	case seriesItem:
-		n, err := enqueueSeries(ctx, m.store, cfg, it.row)
+		n, err := catalog.EnqueueSeries(ctx, m.store, m.xc, cfg, it.row)
 		if err != nil {
-			m.statusMsg = "open in browse view first to fetch seasons: " + it.row.Name
+			m.statusMsg = "ERR: " + err.Error()
 			return m, nil
 		}
-		m.statusMsg = fmt.Sprintf("queued show: %s (%d episodes)", it.row.Name, n)
+		m.statusMsg = fmt.Sprintf("queued show: %s (%d episodes, subscribed)", it.row.Name, n)
 	}
 	// After every enqueue, re-render badges so the just-queued item shows [Q].
 	return m, refreshBadgesCmd(m.store)

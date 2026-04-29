@@ -41,7 +41,7 @@ type App struct {
 func New(st *store.Store, xc *xtream.Client, moviesDir, seriesDir string) *App {
 	a := &App{store: st, xtream: xc, keys: defaultKeys()}
 	a.browse = newBrowseModel(st, xc, moviesDir, seriesDir)
-	a.search = newSearchModel(st, moviesDir, seriesDir)
+	a.search = newSearchModel(st, xc, moviesDir, seriesDir)
 	a.queue = newQueueModel(st)
 	return a
 }

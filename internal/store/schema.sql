@@ -66,6 +66,15 @@ CREATE TABLE IF NOT EXISTS jobs (
   completed_at    INTEGER
 );
 
+-- Series the user has queued in full. The catalog refresh fetches fresh
+-- get_series_info for each row, diffs against the cached episodes, and
+-- auto-enqueues anything new.
+CREATE TABLE IF NOT EXISTS series_subscriptions (
+  series_id        INTEGER PRIMARY KEY,
+  created_at       INTEGER NOT NULL,
+  last_checked_at  INTEGER
+);
+
 CREATE INDEX IF NOT EXISTS idx_jobs_status      ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_categories_type  ON categories(type);
 CREATE INDEX IF NOT EXISTS idx_vods_category    ON vods(category_id);

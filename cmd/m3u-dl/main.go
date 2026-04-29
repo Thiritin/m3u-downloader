@@ -279,12 +279,13 @@ func isStderrTTY() bool {
 }
 
 func runSync(_ []string) error {
-	_, st, xc, err := loadAll()
+	cfg, st, xc, err := loadAll()
 	if err != nil {
 		return err
 	}
 	defer st.Close()
-	return catalog.FullSync(context.Background(), st, xc, func(stage string, count int) {
+	enq := catalog.EnqueueConfig{MoviesDir: cfg.Output.MoviesDir, SeriesDir: cfg.Output.SeriesDir}
+	return catalog.SyncAndRefreshSubscriptions(context.Background(), st, xc, enq, func(stage string, count int) {
 		if count > 0 {
 			fmt.Printf("[sync] %s (%d)\n", stage, count)
 		} else {

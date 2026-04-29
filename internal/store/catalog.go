@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -35,6 +37,23 @@ func (s *Store) ListAllVODs(ctx context.Context) ([]VODRow, error) {
 }
 
 // ListAllSeries returns every cached series (used by global search).
+// GetSeries returns the series row for seriesID, or (nil, nil) if not found.
+func (s *Store) GetSeries(ctx context.Context, seriesID int) (*SeriesRow, error) {
+	row := s.db.QueryRowContext(ctx,
+		`SELECT series_id,category_id,name,COALESCE(year,0),COALESCE(plot,''),
+		        COALESCE(cover_url,''),COALESCE(backdrop_url,'')
+		 FROM series WHERE series_id=?`, seriesID)
+	var r SeriesRow
+	if err := row.Scan(&r.SeriesID, &r.CategoryID, &r.Name, &r.Year, &r.Plot,
+		&r.CoverURL, &r.BackdropURL); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &r, nil
+}
+
 func (s *Store) ListAllSeries(ctx context.Context) ([]SeriesRow, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT series_id,category_id,name,COALESCE(year,0),COALESCE(plot,''),

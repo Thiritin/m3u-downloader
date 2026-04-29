@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/Thiritin/m3u-downloader/internal/catalog"
 	"github.com/Thiritin/m3u-downloader/internal/store"
 	"github.com/Thiritin/m3u-downloader/internal/xtream"
 )
@@ -246,38 +247,9 @@ func loadItemsCmd(st *store.Store, xc *xtream.Client, cat store.CategoryRow) tea
 
 func loadSeriesInfoCmd(st *store.Store, xc *xtream.Client, sr store.SeriesRow) tea.Cmd {
 	return func() tea.Msg {
-		ctx := context.Background()
-		seasons, _ := st.ListSeasons(ctx, sr.SeriesID)
-		if len(seasons) == 0 {
-			info, err := xc.GetSeriesInfo(ctx, sr.SeriesID)
-			if err != nil {
-				return errMsg{err}
-			}
-			seasonRows := make([]store.SeasonRow, 0, len(info.Seasons))
-			for _, s := range info.Seasons {
-				seasonRows = append(seasonRows, store.SeasonRow{
-					SeriesID: sr.SeriesID, SeasonNumber: s.SeasonNumber,
-					Name: s.Name, Overview: s.Overview, CoverURL: s.Cover,
-				})
-			}
-			var epRows []store.EpisodeRow
-			for seasonStr, eps := range info.Episodes {
-				sn := 0
-				fmt.Sscanf(seasonStr, "%d", &sn)
-				for _, e := range eps {
-					id := 0
-					fmt.Sscanf(e.ID, "%d", &id)
-					dur := 0
-					fmt.Sscanf(e.Info.Duration, "%d", &dur)
-					epRows = append(epRows, store.EpisodeRow{
-						EpisodeID: id, SeriesID: sr.SeriesID, SeasonNumber: sn,
-						EpisodeNum: e.EpisodeNum, Title: e.Title, Plot: e.Info.Plot,
-						ContainerExt: e.ContainerExtension, DurationSecs: dur,
-					})
-				}
-			}
-			_ = st.ReplaceSeasonsAndEpisodes(ctx, sr.SeriesID, seasonRows, epRows)
-			seasons, _ = st.ListSeasons(ctx, sr.SeriesID)
+		seasons, err := catalog.EnsureSeasonsCached(context.Background(), st, xc, sr.SeriesID)
+		if err != nil {
+			return errMsg{err}
 		}
 		return seriesInfoLoadedMsg{seasons: seasons}
 	}
@@ -455,30 +427,30 @@ func (m browseModel) drillOut() (browseModel, tea.Cmd) {
 }
 
 func (m browseModel) queueSelected() (browseModel, tea.Cmd) {
-	cfg := EnqueueConfig{MoviesDir: m.moviesDir, SeriesDir: m.seriesDir}
+	cfg := catalog.EnqueueConfig{MoviesDir: m.moviesDir, SeriesDir: m.seriesDir}
 	ctx := context.Background()
 	var refreshCmd tea.Cmd
 	switch m.level {
 	case levelItems:
 		switch it := m.items.SelectedItem().(type) {
 		case vodItem:
-			err := enqueueVOD(ctx, m.store, cfg, it.row)
+			err := catalog.EnqueueVOD(ctx, m.store, cfg, it.row)
 			m.statusMsg = friendlyEnqueueMsg("queued movie", err)
 			if err == nil && m.currentCategory.ID != 0 {
 				refreshCmd = loadItemsCmd(m.store, m.xc, m.currentCategory)
 			}
 		case seriesItem:
-			n, err := enqueueSeries(ctx, m.store, cfg, it.row)
-			m.statusMsg = countOrError("queued show", n, err)
+			n, err := catalog.EnqueueSeries(ctx, m.store, m.xc, cfg, it.row)
+			m.statusMsg = countOrError("queued show (subscribed)", n, err)
 		}
 	case levelSeasons:
 		if it, ok := m.seasons.SelectedItem().(seasonItem); ok {
-			n, err := enqueueSeason(ctx, m.store, cfg, m.currentSeries, it.row.SeasonNumber)
+			n, err := catalog.EnqueueSeason(ctx, m.store, cfg, m.currentSeries, it.row.SeasonNumber)
 			m.statusMsg = countOrError("queued season", n, err)
 		}
 	case levelEpisodes:
 		if it, ok := m.episodes.SelectedItem().(episodeItem); ok {
-			err := enqueueEpisode(ctx, m.store, cfg, m.currentSeries, it.row)
+			err := catalog.EnqueueEpisode(ctx, m.store, cfg, m.currentSeries, it.row)
 			m.statusMsg = friendlyEnqueueMsg("queued episode", err)
 			if err == nil {
 				refreshCmd = loadEpisodesCmd(m.store, m.currentSeries.SeriesID, m.currentSeason.SeasonNumber)
