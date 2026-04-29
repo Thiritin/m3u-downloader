@@ -1,0 +1,11 @@
+[Unit]
+Description=m3u-dl download worker
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/m3u-dl worker
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
