@@ -236,7 +236,7 @@ func openLogFile() (*os.File, error) {
 
 // logFilePath returns the platform-appropriate worker log location.
 //   - macOS:   $HOME/Library/Logs/m3u-dl.log     (Console.app picks it up)
-//   - Linux:   $HOME/.local/state/m3u-dl/m3u-dl.log
+//   - Linux:   $XDG_STATE_HOME/m3u-dl/m3u-dl.log (default $HOME/.local/state/m3u-dl/m3u-dl.log)
 //   - Windows: %LOCALAPPDATA%/m3u-dl/m3u-dl.log
 func logFilePath() (string, error) {
 	switch runtime.GOOS {
@@ -252,6 +252,15 @@ func logFilePath() (string, error) {
 			return "", err
 		}
 		return filepath.Join(dir, "m3u-dl", "m3u-dl.log"), nil
+	case "linux":
+		if dir := os.Getenv("XDG_STATE_HOME"); dir != "" {
+			return filepath.Join(dir, "m3u-dl", "m3u-dl.log"), nil
+		}
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(home, ".local", "state", "m3u-dl", "m3u-dl.log"), nil
 	default:
 		home, err := os.UserHomeDir()
 		if err != nil {
