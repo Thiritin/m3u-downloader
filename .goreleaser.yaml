@@ -1,0 +1,145 @@
+version: 2
+
+project_name: m3u-dl
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: m3u-dl
+    main: ./cmd/m3u-dl
+    binary: m3u-dl
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - id: default
+    name_template: >-
+      {{ .ProjectName }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+      - config.example.toml
+
+nfpms:
+  - id: linux-packages
+    package_name: m3u-dl
+    file_name_template: >-
+      {{- if eq .ConventionalExtension ".deb" -}}
+      {{ .PackageName }}_{{ .Version }}_{{ .Arch }}{{ .ConventionalExtension }}
+      {{- else -}}
+      {{ .PackageName }}-{{ .Version }}-1.{{ .Arch }}{{ .ConventionalExtension }}
+      {{- end -}}
+    ids:
+      - m3u-dl
+    homepage: https://github.com/Thiritin/m3u-downloader
+    description: |-
+      Browse an Xtream Codes IPTV/VOD catalog through a TUI and download
+      titles into a Plex-compatible on-disk library.
+    maintainer: Martin Becker <me@thiritin.com>
+    license: see LICENSE
+    section: net
+    priority: optional
+    formats:
+      - deb
+      - rpm
+    contents:
+      - src: ./packaging/m3u-dl.service
+        dst: /usr/lib/systemd/user/m3u-dl.service
+        file_info:
+          mode: 0644
+      - src: ./LICENSE
+        dst: /usr/share/doc/m3u-dl/LICENSE
+        file_info:
+          mode: 0644
+      - src: ./README.md
+        dst: /usr/share/doc/m3u-dl/README.md
+        file_info:
+          mode: 0644
+      - src: ./config.example.toml
+        dst: /usr/share/doc/m3u-dl/config.example.toml
+        file_info:
+          mode: 0644
+      - src: ./packaging/m3u-dl-release.pub.asc
+        dst: /usr/share/doc/m3u-dl/release-signing-key.asc
+        file_info:
+          mode: 0644
+    deb:
+      signature:
+        key_file: '{{ .Env.GPG_KEY_PATH }}'
+        type: origin
+    rpm:
+      signature:
+        key_file: '{{ .Env.GPG_KEY_PATH }}'
+
+brews:
+  - name: m3u-dl
+    repository:
+      owner: Thiritin
+      name: homebrew-tap
+      token: '{{ .Env.HOMEBREW_TAP_TOKEN }}'
+    directory: Formula
+    homepage: https://github.com/Thiritin/m3u-downloader
+    description: Browse Xtream IPTV catalogs and download into a Plex-compatible library.
+    license: see LICENSE
+    install: |
+      bin.install "m3u-dl"
+    test: |
+      assert_match "m3u-dl", shell_output("#{bin}/m3u-dl --help", 2)
+    skip_upload: auto
+
+checksum:
+  name_template: SHA256SUMS
+  algorithm: sha256
+
+signs:
+  - id: checksum
+    artifacts: checksum
+    cmd: gpg
+    args:
+      - "--batch"
+      - "--pinentry-mode=loopback"
+      - "--local-user"
+      - "{{ .Env.GPG_FINGERPRINT }}"
+      - "--output"
+      - "${signature}"
+      - "--detach-sign"
+      - "${artifact}"
+
+release:
+  github:
+    owner: Thiritin
+    name: m3u-downloader
+  prerelease: auto
+  draft: false
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 1
+    - title: Other
+      order: 999
